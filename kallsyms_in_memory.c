@@ -120,10 +120,18 @@ static const unsigned long const pattern_kallsyms_in_memory_addresses_3[] = {
   0
 };
 
+static const unsigned long const pattern_kallsyms_in_memory_addresses_4[] = {
+  0xc0008180, // asm_do_IRQ
+  0xc0008180, // _stext
+  0xc0008180, // __exception_text_start
+  0
+};
+
 static const unsigned long const * const pattern_kallsyms_in_memory_addresses[] = {
   pattern_kallsyms_in_memory_addresses_1,
   pattern_kallsyms_in_memory_addresses_2,
   pattern_kallsyms_in_memory_addresses_3,
+  pattern_kallsyms_in_memory_addresses_4,
 };
 
 static unsigned long *
