@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-extern int kallsyms_in_memory_init(unsigned long *mem, size_t len);
+extern bool kallsyms_in_memory_init(unsigned long *mem, size_t len);
 
 extern unsigned long kallsyms_in_memory_lookup_name(const char *name);
 extern const char *kallsyms_in_memory_lookup_address(unsigned long address);

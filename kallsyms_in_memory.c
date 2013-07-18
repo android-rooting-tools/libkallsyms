@@ -296,7 +296,7 @@ get_kallsyms_in_memory_addresses(unsigned long *mem, unsigned long length, unsig
   return 0;
 }
 
-int
+bool
 kallsyms_in_memory_init(unsigned long *mem, size_t len)
 {
   unsigned long mmap_offset = 0xc0008000 - (unsigned long)mem;
