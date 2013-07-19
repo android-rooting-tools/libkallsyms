@@ -2,8 +2,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-//#define DBGPRINT(fmt...) fprintf(stderr, fmt)
-#define DBGPRINT(fmt...) (0)
+static bool verbose_output;
+
+#define DBGPRINT(fmt...) do { if (verbose_output) { fprintf(stderr, fmt); } } while (0)
 
 
 typedef unsigned char uint8_t;
@@ -342,6 +343,12 @@ kallsyms_in_memory_print_all(void)
     printf("%08x %s\n", (unsigned int)kallsyms_in_memory_addresses[i], namebuf);
   }
   return;
+}
+
+void
+kallsyms_in_memory_set_verbose(bool verbose)
+{
+  verbose_output = verbose;
 }
 
 #if 0

@@ -10,6 +10,7 @@ extern const char *kallsyms_in_memory_lookup_address(unsigned long address);
 
 extern bool is_address_in_kallsyms_table(void *mapped_address);
 
+extern void kallsyms_in_memory_set_verbose(bool verbose);
 extern void kallsyms_in_memory_print_all(void);
 
 #endif /* __KALLSYMSPRINT_H__ */
