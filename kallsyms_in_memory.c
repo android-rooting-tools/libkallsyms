@@ -364,7 +364,7 @@ is_address_in_kallsyms_table(void *mapped_address)
 }
 
 void
-kallsyms_in_memory_print_all(void)
+kallsyms_in_memory_print_all_to_file(FILE *fp)
 {
   char namebuf[1024];
   unsigned long i;
@@ -372,9 +372,15 @@ kallsyms_in_memory_print_all(void)
 
   for (i = 0, off = 0; i < kallsyms_in_memory_num_syms; i++) {
     off = kallsyms_in_memory_expand_symbol(off, namebuf);
-    printf("%08x %s\n", (unsigned int)kallsyms_in_memory_addresses[i], namebuf);
+    fprintf(fp, "%08x %s\n", (unsigned int)kallsyms_in_memory_addresses[i], namebuf);
   }
   return;
+}
+
+void
+kallsyms_in_memory_print_all(void)
+{
+  kallsyms_in_memory_print_all_to_file(stdout);
 }
 
 void
