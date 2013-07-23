@@ -7,6 +7,7 @@ static bool verbose_output;
 
 #define DBGPRINT(fmt...) do { if (verbose_output) { fprintf(stderr, fmt); } } while (0)
 
+#define ARRAY_SIZE(n) (sizeof (n) / sizeof (*n))
 
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
@@ -94,7 +95,7 @@ kallsyms_in_memory_lookup_names(const char *name)
   unsigned long *found_addresses;
 
   for (i = 0, off = 0, count = 0;
-       i < kallsyms_in_memory_num_syms && count < 1024;
+       i < kallsyms_in_memory_num_syms && count < ARRAY_SIZE(addresses);
        i++) {
     off = kallsyms_in_memory_expand_symbol(off, namebuf);
     if (strcmp(namebuf, name) == 0) {
@@ -111,7 +112,7 @@ kallsyms_in_memory_lookup_names(const char *name)
     return NULL;
   }
   memcpy(found_addresses, addresses, sizeof(unsigned long) * count);
-  found_addresses[count] = NULL;
+  found_addresses[count] = 0;
 
   return found_addresses;
 }
