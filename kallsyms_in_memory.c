@@ -106,11 +106,12 @@ kallsyms_in_memory_lookup_names(const char *name)
     return NULL;
   }
 
-  found_addresses = malloc(sizeof(unsigned long) * count);
+  found_addresses = malloc(sizeof(unsigned long) * (count + 1));
   if (!found_addresses) {
     return NULL;
   }
   memcpy(found_addresses, addresses, sizeof(unsigned long) * count);
+  found_addresses[count] = NULL;
 
   return found_addresses;
 }
