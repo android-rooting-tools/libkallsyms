@@ -1,6 +1,7 @@
 #define _LARGEFILE64_SOURCE
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 static bool verbose_output;
 
@@ -81,6 +82,37 @@ kallsyms_in_memory_lookup_name(const char *name)
     }
   }
   return 0;
+}
+
+unsigned long *
+kallsyms_in_memory_lookup_names(const char *name)
+{
+  char namebuf[1024];
+  unsigned long i, count;
+  unsigned int off;
+  unsigned long addresses[256] = { 0 };
+  unsigned long *found_addresses;
+
+  for (i = 0, off = 0, count = 0;
+       i < kallsyms_in_memory_num_syms && count < 1024;
+       i++) {
+    off = kallsyms_in_memory_expand_symbol(off, namebuf);
+    if (strcmp(namebuf, name) == 0) {
+      addresses[count] = kallsyms_in_memory_addresses[i];
+      count++;
+    }
+  }
+  if (!count) {
+    return NULL;
+  }
+
+  found_addresses = malloc(sizeof(unsigned long) * count);
+  if (!found_addresses) {
+    return NULL;
+  }
+  memcpy(found_addresses, addresses, sizeof(unsigned long) * count);
+
+  return found_addresses;
 }
 
 /* Lookup the symbol for this address. Returns NULL if not found. */
