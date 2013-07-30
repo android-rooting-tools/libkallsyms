@@ -419,6 +419,14 @@ kallsyms_in_memory_set_verbose(bool verbose)
   verbose_output = verbose;
 }
 
+void
+kallsyms_in_memory_free(kallsyms *kallsyms)
+{
+  if (kallsyms) {
+    free(kallsyms);
+  }
+}
+
 #if 0
 static bool
 do_kallsyms_in_memory(void)
