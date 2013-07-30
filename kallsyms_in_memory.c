@@ -1,5 +1,6 @@
 #define _LARGEFILE64_SOURCE
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -10,9 +11,6 @@ static bool verbose_output;
 #define DBGPRINT(fmt...) do { if (verbose_output) { fprintf(stderr, fmt); } } while (0)
 
 #define ARRAY_SIZE(n) (sizeof (n) / sizeof (*n))
-
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
 
 struct _kallsyms {
   unsigned long  num_syms;
