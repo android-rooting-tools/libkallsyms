@@ -91,21 +91,20 @@ kallsyms_in_memory_lookup_name(kallsyms *kallsyms, const char *name)
   return 0;
 }
 
-unsigned long *
-kallsyms_in_memory_lookup_names(kallsyms *kallsyms, const char *name)
+bool
+kallsyms_in_memory_lookup_names(kallsyms *kallsyms, const char *name,
+                                unsigned long *addresses, size_t n_addresses)
 {
   char namebuf[1024];
   unsigned long i, count;
   unsigned int off;
-  unsigned long addresses[256] = { 0 };
-  unsigned long *found_addresses;
 
   if (!kallsyms) {
-    return NULL;
+    return false;
   }
 
   for (i = 0, off = 0, count = 0;
-       i < kallsyms->num_syms && count < ARRAY_SIZE(addresses);
+       i < kallsyms->num_syms && count < n_addresses;
        i++) {
     off = kallsyms_in_memory_expand_symbol(kallsyms, off, namebuf);
     if (strcmp(namebuf, name) == 0) {
@@ -114,17 +113,10 @@ kallsyms_in_memory_lookup_names(kallsyms *kallsyms, const char *name)
     }
   }
   if (!count) {
-    return NULL;
+    return false;
   }
 
-  found_addresses = malloc(sizeof(unsigned long) * (count + 1));
-  if (!found_addresses) {
-    return NULL;
-  }
-  memcpy(found_addresses, addresses, sizeof(unsigned long) * count);
-  found_addresses[count] = 0;
-
-  return found_addresses;
+  return true;
 }
 
 /* Lookup the symbol for this address. Returns NULL if not found. */
