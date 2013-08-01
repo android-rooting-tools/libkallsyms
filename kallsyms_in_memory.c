@@ -363,7 +363,7 @@ kallsyms_in_memory_init(unsigned long *mem, size_t len)
   return kallsyms;
 }
 
-static bool
+bool
 is_address_in_kallsyms_table(kallsyms *kallsyms, void *mapped_address)
 {
   DBGPRINT("check %p <= %p <= %p\n",

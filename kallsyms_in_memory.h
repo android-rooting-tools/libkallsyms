@@ -13,6 +13,8 @@ bool           kallsyms_in_memory_lookup_names  (kallsyms *kallsyms, const char 
                                                  unsigned long *addresses, size_t n_addresses);
 const char    *kallsyms_in_memory_lookup_address(kallsyms *kallsyms, unsigned long address);
 
+bool is_address_in_kallsyms_table(kallsyms *kallsyms, void *mapped_address);
+
 void kallsyms_in_memory_set_verbose(bool verbose);
 void kallsyms_in_memory_print_all(kallsyms *kallsyms);
 void kallsyms_in_memory_print_all_to_file(kallsyms *kallsyms, FILE *fp);
