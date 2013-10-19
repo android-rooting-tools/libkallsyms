@@ -19,6 +19,7 @@ struct _kallsyms {
   uint8_t       *token_table;
   uint16_t      *token_index;
   unsigned long *markers;
+  int            has_type_table;
 };
 
 /*
@@ -28,7 +29,7 @@ struct _kallsyms {
 static unsigned int
 kallsyms_in_memory_expand_symbol(kallsyms *kallsyms, unsigned int off, char *result)
 {
-  int len, skipped_first = 0;
+  int len, skipped_type_marker = kallsyms->has_type_table;
   const uint8_t *tptr, *data;
 
   /* Get the compressed symbol length from the first symbol byte. */
@@ -52,12 +53,12 @@ kallsyms_in_memory_expand_symbol(kallsyms *kallsyms, unsigned int off, char *res
     len--;
 
     while (*tptr) {
-      if (skipped_first) {
+      if (skipped_type_marker) {
         *result = *tptr;
         result++;
       }
       else {
-        skipped_first = 1;
+        skipped_type_marker = 1;
       }
 
       tptr++;
@@ -287,6 +288,8 @@ get_kallsyms_in_memory_addresses(kallsyms *kallsyms, unsigned long *mem, unsigne
 
     // skip kallsyms_type_table if exist
     while (addr[0] != 0x00000000) {
+      kallsyms->has_type_table = 1;
+
       addr++;
       if (addr >= end) {
         return 0;
