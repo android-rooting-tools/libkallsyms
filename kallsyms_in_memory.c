@@ -285,6 +285,14 @@ get_kallsyms_in_memory_addresses(kallsyms *kallsyms, unsigned long *mem, unsigne
       return 0;
     }
 
+    // skip kallsyms_type_table if exist
+    while (addr[0] != 0x00000000) {
+      addr++;
+      if (addr >= end) {
+        return 0;
+      }
+    }
+
     // skip there is filled by 0x0
     while (addr[0] == 0x00000000) {
       addr++;
