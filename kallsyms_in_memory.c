@@ -199,6 +199,26 @@ search_pattern(unsigned long *base, unsigned long count, const unsigned long *co
   return 0;
 }
 
+static bool
+is_type_table(const unsigned long *mem, unsigned long length)
+{
+  int i;
+
+  if (length < 256 * 4) {
+    return false;
+  }
+
+  for (i = 0; i < 256; i++) {
+    unsigned long data = mem[i] & ~0x20202020;
+
+    if (data != 0x54545454) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 static int
 get_kallsyms_in_memory_addresses(kallsyms *info, unsigned long *mem, unsigned long length, unsigned long offset)
 {
@@ -286,16 +306,6 @@ get_kallsyms_in_memory_addresses(kallsyms *info, unsigned long *mem, unsigned lo
       return 0;
     }
 
-    // skip kallsyms_type_table if exist
-    while (addr[0] != 0x00000000) {
-      info->has_type_table = 1;
-
-      addr++;
-      if (addr >= end) {
-        return 0;
-      }
-    }
-
     // skip there is filled by 0x0
     while (addr[0] == 0x00000000) {
       addr++;
@@ -303,6 +313,29 @@ get_kallsyms_in_memory_addresses(kallsyms *info, unsigned long *mem, unsigned lo
         return 0;
       }
     }
+
+    if (is_type_table(addr, end - addr)) {
+      DBGPRINT("[+]kallsyms_type_table=%08x\n", (unsigned int)addr + (unsigned int)offset);
+      info->has_type_table = 1;
+
+      // skip kallsyms_type_table if exist
+      while (addr[0] != 0x00000000) {
+
+	addr++;
+	if (addr >= end) {
+	  return 0;
+	}
+      }
+
+      // skip there is filled by 0x0
+      while (addr[0] == 0x00000000) {
+	addr++;
+	if (addr >= end) {
+	  return 0;
+	}
+      }
+    }
+
     // but kallsyms_in_memory_markers shoud be start 0x00000000
     addr--;
 
