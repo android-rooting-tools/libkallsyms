@@ -169,11 +169,20 @@ static const unsigned long const pattern_kallsyms_addresses_4[] = {
   0
 };
 
+static const unsigned long const pattern_kallsyms_addresses_5[] = {
+  0xc0100000,
+  0xc0100000,
+  0xc0100000,
+  0xc0100004,
+  0
+};
+
 static const unsigned long const * const pattern_kallsyms_addresses[] = {
   pattern_kallsyms_addresses_1,
   pattern_kallsyms_addresses_2,
   pattern_kallsyms_addresses_3,
   pattern_kallsyms_addresses_4,
+  pattern_kallsyms_addresses_5,
 };
 
 static unsigned long *
