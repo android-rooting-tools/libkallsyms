@@ -170,10 +170,10 @@ static const unsigned long const pattern_kallsyms_addresses_4[] = {
 };
 
 static const unsigned long const pattern_kallsyms_addresses_5[] = {
-  0xc0100000,
-  0xc0100000,
-  0xc0100000,
-  0xc0100004,
+  0xc0100000, // asm_do_IRQ
+  0xc0100000, // _stext
+  0xc0100000, // __exception_text_start
+  0xc0100004, // do_undefinstr
   0
 };
 
