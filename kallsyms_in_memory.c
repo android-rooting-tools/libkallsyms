@@ -142,6 +142,15 @@ kallsyms_in_memory_lookup_address(kallsyms *info, unsigned long address)
 }
 
 static const unsigned long const pattern_kallsyms_addresses_1[] = {
+  //00000000, //  __vectors_start
+  0x00001000, // __stubs_start
+  0x00001004, // vector_rst
+  0x00001020, // vector_irq
+  0x000010a0, // vector_dabt
+  0
+};
+
+static const unsigned long const pattern_kallsyms_addresses_2[] = {
   0xc0008000, // __init_begin
   0xc0008000, // _sinittext
   0xc0008000, // stext
@@ -149,27 +158,27 @@ static const unsigned long const pattern_kallsyms_addresses_1[] = {
   0
 };
 
-static const unsigned long const pattern_kallsyms_addresses_2[] = {
+static const unsigned long const pattern_kallsyms_addresses_3[] = {
   0xc0008000, // stext
   0xc0008000, // _text
   0
 };
 
-static const unsigned long const pattern_kallsyms_addresses_3[] = {
+static const unsigned long const pattern_kallsyms_addresses_4[] = {
   0xc00081c0, // asm_do_IRQ
   0xc00081c0, // _stext
   0xc00081c0, // __exception_text_start
   0
 };
 
-static const unsigned long const pattern_kallsyms_addresses_4[] = {
+static const unsigned long const pattern_kallsyms_addresses_5[] = {
   0xc0008180, // asm_do_IRQ
   0xc0008180, // _stext
   0xc0008180, // __exception_text_start
   0
 };
 
-static const unsigned long const pattern_kallsyms_addresses_5[] = {
+static const unsigned long const pattern_kallsyms_addresses_6[] = {
   0xc0100000, // asm_do_IRQ
   0xc0100000, // _stext
   0xc0100000, // __exception_text_start
@@ -183,6 +192,7 @@ static const unsigned long const * const pattern_kallsyms_addresses[] = {
   pattern_kallsyms_addresses_3,
   pattern_kallsyms_addresses_4,
   pattern_kallsyms_addresses_5,
+  pattern_kallsyms_addresses_6,
 };
 
 static unsigned long *
@@ -255,10 +265,16 @@ get_kallsyms_in_memory_addresses(kallsyms *info, unsigned long *mem, unsigned lo
     }
 
     info->addresses = addr;
-    DBGPRINT("[+]kallsyms_addresses=%08x\n", (unsigned int)info->addresses + (unsigned int)offset);
 
     // search end of kallsyms_in_memory_addresses
     unsigned long n=0;
+    while (addr[0] <= 0xc0000000) {
+      n++;
+      addr++;
+      if (addr >= end) {
+        return 0;
+      }
+    }
     while (addr[0] > 0xc0000000) {
       n++;
       addr++;
@@ -266,7 +282,6 @@ get_kallsyms_in_memory_addresses(kallsyms *info, unsigned long *mem, unsigned lo
         return 0;
       }
     }
-    DBGPRINT("  count=%08x\n", (unsigned int)n);
 
     // skip there is filled by 0x0
     while (addr[0] == 0x00000000) {
@@ -281,6 +296,18 @@ get_kallsyms_in_memory_addresses(kallsyms *info, unsigned long *mem, unsigned lo
     if (addr >= end) {
       return 0;
     }
+
+    // adjust if it has one more address that equals zero
+    if (info->num_syms == n + 1) {
+      if (info->addresses > mem
+       && info->addresses[-1] == 0) {
+        info->addresses--;
+	n++;
+      }
+    }
+
+    DBGPRINT("[+]kallsyms_addresses=%08x\n", (unsigned int)info->addresses + (unsigned int)offset);
+    DBGPRINT("  count=%08x\n", (unsigned int)n);
     DBGPRINT("[+]kallsyms_num_syms=%08x\n", (unsigned int)info->num_syms);
 
     // check kallsyms_in_memory_num_syms
