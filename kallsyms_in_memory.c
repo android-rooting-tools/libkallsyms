@@ -3,8 +3,20 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <endian.h>
 
 #include "kallsyms_in_memory.h"
+
+#ifndef le32toh
+#define le32toh         letoh32
+#endif
+
+#ifndef le16toh
+#define le16toh         letoh16
+#endif
+
+
+#define PATTERN_MAX     8
 
 static bool verbose_output;
 
@@ -48,7 +60,7 @@ kallsyms_in_memory_expand_symbol(kallsyms *info, unsigned int off, char *result)
    * entry for that byte.
    */
   while (len) {
-    tptr = &info->token_table[info->token_index[*data]];
+    tptr = &info->token_table[le16toh(info->token_index[*data])];
     data++;
     len--;
 
@@ -86,7 +98,7 @@ kallsyms_in_memory_lookup_name(kallsyms *info, const char *name)
   for (i = 0, off = 0; i < info->num_syms; i++) {
     off = kallsyms_in_memory_expand_symbol(info, off, namebuf);
     if (strcmp(namebuf, name) == 0) {
-      return info->addresses[i];
+      return le32toh(info->addresses[i]);
     }
   }
   return 0;
@@ -109,7 +121,7 @@ kallsyms_in_memory_lookup_names(kallsyms *info, const char *name,
        i++) {
     off = kallsyms_in_memory_expand_symbol(info, off, namebuf);
     if (strcmp(namebuf, name) == 0) {
-      addresses[count] = info->addresses[i];
+      addresses[count] = le32toh(info->addresses[i]);
       count++;
     }
   }
@@ -134,14 +146,14 @@ kallsyms_in_memory_lookup_address(kallsyms *info, unsigned long address)
 
   for (i = 0, off = 0; i < info->num_syms; i++) {
     off = kallsyms_in_memory_expand_symbol(info, off, namebuf);
-    if (info->addresses[i] == address) {
+    if (le32toh(info->addresses[i]) == address) {
       return namebuf;
     }
   }
   return NULL;
 }
 
-static const unsigned long const pattern_kallsyms_addresses_1[] = {
+static const unsigned long const pattern_kallsyms_addresses_1[PATTERN_MAX] = {
   //00000000, //  __vectors_start
   0x00001000, // __stubs_start
   0x00001004, // vector_rst
@@ -150,7 +162,7 @@ static const unsigned long const pattern_kallsyms_addresses_1[] = {
   0
 };
 
-static const unsigned long const pattern_kallsyms_addresses_2[] = {
+static const unsigned long const pattern_kallsyms_addresses_2[PATTERN_MAX] = {
   0xc0008000, // __init_begin
   0xc0008000, // _sinittext
   0xc0008000, // stext
@@ -158,27 +170,27 @@ static const unsigned long const pattern_kallsyms_addresses_2[] = {
   0
 };
 
-static const unsigned long const pattern_kallsyms_addresses_3[] = {
+static const unsigned long const pattern_kallsyms_addresses_3[PATTERN_MAX] = {
   0xc0008000, // stext
   0xc0008000, // _text
   0
 };
 
-static const unsigned long const pattern_kallsyms_addresses_4[] = {
+static const unsigned long const pattern_kallsyms_addresses_4[PATTERN_MAX] = {
   0xc00081c0, // asm_do_IRQ
   0xc00081c0, // _stext
   0xc00081c0, // __exception_text_start
   0
 };
 
-static const unsigned long const pattern_kallsyms_addresses_5[] = {
+static const unsigned long const pattern_kallsyms_addresses_5[PATTERN_MAX] = {
   0xc0008180, // asm_do_IRQ
   0xc0008180, // _stext
   0xc0008180, // __exception_text_start
   0
 };
 
-static const unsigned long const pattern_kallsyms_addresses_6[] = {
+static const unsigned long const pattern_kallsyms_addresses_6[PATTERN_MAX] = {
   0xc0100000, // asm_do_IRQ
   0xc0100000, // _stext
   0xc0100000, // __exception_text_start
@@ -254,7 +266,14 @@ get_kallsyms_in_memory_addresses(kallsyms *info, unsigned long *mem, unsigned lo
 
     // get kallsyms_in_memory_addresses pointer
     for (i = 0; i < sizeof (pattern_kallsyms_addresses) / sizeof (pattern_kallsyms_addresses[0]); i++) {
-      addr = search_pattern(search, end - search, pattern_kallsyms_addresses[i]);
+      unsigned long pattern_le[PATTERN_MAX];
+      int j;
+
+      for (j = 0; j < PATTERN_MAX; j++) {
+          pattern_le[j] = htole32(pattern_kallsyms_addresses[i][j]);
+      }
+
+      addr = search_pattern(search, end - search, pattern_le);
       if (addr) {
         break;
       }
@@ -268,14 +287,14 @@ get_kallsyms_in_memory_addresses(kallsyms *info, unsigned long *mem, unsigned lo
 
     // search end of kallsyms_in_memory_addresses
     unsigned long n=0;
-    while (addr[0] <= 0xc0000000) {
+    while (le32toh(addr[0]) <= 0xc0000000) {
       n++;
       addr++;
       if (addr >= end) {
         return 0;
       }
     }
-    while (addr[0] > 0xc0000000) {
+    while (le32toh(addr[0]) > 0xc0000000) {
       n++;
       addr++;
       if (addr >= end) {
@@ -291,7 +310,7 @@ get_kallsyms_in_memory_addresses(kallsyms *info, unsigned long *mem, unsigned lo
       }
     }
 
-    info->num_syms = addr[0];
+    info->num_syms = le32toh(addr[0]);
     addr++;
     if (addr >= end) {
       return 0;
@@ -475,7 +494,7 @@ kallsyms_in_memory_print_all_to_file(kallsyms *info, FILE *fp)
 
   for (i = 0, off = 0; i < info->num_syms; i++) {
     off = kallsyms_in_memory_expand_symbol(info, off, namebuf);
-    fprintf(fp, "%08x %s\n", (unsigned int)info->addresses[i], namebuf);
+    fprintf(fp, "%08x %s\n", (unsigned int)le32toh(info->addresses[i]), namebuf);
   }
   return;
 }
