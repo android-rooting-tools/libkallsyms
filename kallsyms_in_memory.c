@@ -15,6 +15,14 @@
 #define le16toh         letoh16
 #endif
 
+#ifdef __LP64__
+#define letoh           le64toh
+#define htole           htole64
+#else
+#define letoh           le32toh
+#define htole           htole32
+#endif
+
 
 #define PATTERN_MAX     8
 
@@ -98,7 +106,7 @@ kallsyms_in_memory_lookup_name(kallsyms *info, const char *name)
   for (i = 0, off = 0; i < info->num_syms; i++) {
     off = kallsyms_in_memory_expand_symbol(info, off, namebuf);
     if (strcmp(namebuf, name) == 0) {
-      return le32toh(info->addresses[i]);
+      return letoh(info->addresses[i]);
     }
   }
   return 0;
@@ -121,7 +129,7 @@ kallsyms_in_memory_lookup_names(kallsyms *info, const char *name,
        i++) {
     off = kallsyms_in_memory_expand_symbol(info, off, namebuf);
     if (strcmp(namebuf, name) == 0) {
-      addresses[count] = le32toh(info->addresses[i]);
+      addresses[count] = letoh(info->addresses[i]);
       count++;
     }
   }
@@ -146,7 +154,7 @@ kallsyms_in_memory_lookup_address(kallsyms *info, unsigned long address)
 
   for (i = 0, off = 0; i < info->num_syms; i++) {
     off = kallsyms_in_memory_expand_symbol(info, off, namebuf);
-    if (le32toh(info->addresses[i]) == address) {
+    if (letoh(info->addresses[i]) == address) {
       return namebuf;
     }
   }
@@ -154,11 +162,21 @@ kallsyms_in_memory_lookup_address(kallsyms *info, unsigned long address)
 }
 
 static const unsigned long const pattern_kallsyms_addresses_1[PATTERN_MAX] = {
+#ifdef __LP64__
+  0xffffffc000080000, // _text
+  0xffffffc000080040, // stext
+  0xffffffc000080080, // __h_error
+  0xffffffc000080080, // __h_error_p
+  0xffffffc0000800c0, // __h_enable_mmu
+  0xffffffc0000800d8, // __h_turn_mmu_on
+  0xffffffc0000800e4, // __vet_fdt
+#else
   //00000000, //  __vectors_start
   0x00001000, // __stubs_start
   0x00001004, // vector_rst
   0x00001020, // vector_irq
   0x000010a0, // vector_dabt
+#endif
   0
 };
 
@@ -231,7 +249,7 @@ search_pattern(unsigned long *base, unsigned long count, const unsigned long *co
 }
 
 static bool
-is_type_table(const unsigned long *mem, unsigned long length)
+is_type_table(const unsigned int *mem, unsigned long length)
 {
   int i;
 
@@ -240,7 +258,7 @@ is_type_table(const unsigned long *mem, unsigned long length)
   }
 
   for (i = 0; i < 256; i++) {
-    unsigned long data = mem[i] & ~0x20202020;
+    unsigned int data = mem[i] & ~0x20202020;
 
     if (data != 0x54545454) {
       return false;
@@ -270,7 +288,7 @@ get_kallsyms_in_memory_addresses(kallsyms *info, unsigned long *mem, unsigned lo
       int j;
 
       for (j = 0; j < PATTERN_MAX; j++) {
-          pattern_le[j] = htole32(pattern_kallsyms_addresses[i][j]);
+          pattern_le[j] = htole(pattern_kallsyms_addresses[i][j]);
       }
 
       addr = search_pattern(search, end - search, pattern_le);
@@ -287,14 +305,22 @@ get_kallsyms_in_memory_addresses(kallsyms *info, unsigned long *mem, unsigned lo
 
     // search end of kallsyms_in_memory_addresses
     unsigned long n=0;
-    while (le32toh(addr[0]) <= 0xc0000000) {
+#ifdef __LP64__
+    while (letoh(addr[0]) <= 0xffffffc000080000LL) {
+#else
+    while (letoh(addr[0]) <= 0xc0000000) {
+#endif
       n++;
       addr++;
       if (addr >= end) {
         return 0;
       }
     }
-    while (le32toh(addr[0]) > 0xc0000000) {
+#ifdef __LP64__
+    while (letoh(addr[0]) > 0xffffffc000080000LL) {
+#else
+    while (letoh(addr[0]) > 0xc0000000) {
+#endif
       n++;
       addr++;
       if (addr >= end) {
@@ -310,7 +336,7 @@ get_kallsyms_in_memory_addresses(kallsyms *info, unsigned long *mem, unsigned lo
       }
     }
 
-    info->num_syms = le32toh(addr[0]);
+    info->num_syms = letoh(addr[0]);
     addr++;
     if (addr >= end) {
       return 0;
@@ -325,7 +351,7 @@ get_kallsyms_in_memory_addresses(kallsyms *info, unsigned long *mem, unsigned lo
       }
     }
 
-    DBGPRINT("[+]kallsyms_addresses=%08x\n", (unsigned int)info->addresses + (unsigned int)offset);
+    DBGPRINT("[+]kallsyms_addresses=%08lx\n", (unsigned long)info->addresses + offset);
     DBGPRINT("  count=%08x\n", (unsigned int)n);
     DBGPRINT("[+]kallsyms_num_syms=%08x\n", (unsigned int)info->num_syms);
 
@@ -343,7 +369,7 @@ get_kallsyms_in_memory_addresses(kallsyms *info, unsigned long *mem, unsigned lo
     }
 
     info->names = (uint8_t*)addr;
-    DBGPRINT("[+]kallsyms_names=%08x\n", (unsigned int)info->names + (unsigned int)offset);
+    DBGPRINT("[+]kallsyms_names=%08lx\n", (unsigned long)info->names + offset);
 
     // search end of kallsyms_in_memory_names
     unsigned int off;
@@ -369,8 +395,8 @@ get_kallsyms_in_memory_addresses(kallsyms *info, unsigned long *mem, unsigned lo
       }
     }
 
-    if (is_type_table(addr, end - addr)) {
-      DBGPRINT("[+]kallsyms_type_table=%08x\n", (unsigned int)addr + (unsigned int)offset);
+    if (is_type_table((void *)addr, (unsigned long)end - (unsigned long)addr)) {
+      DBGPRINT("[+]kallsyms_type_table=%08lx\n", (unsigned long)addr + offset);
       info->has_type_table = 1;
 
       // skip kallsyms_type_table if exist
@@ -392,10 +418,14 @@ get_kallsyms_in_memory_addresses(kallsyms *info, unsigned long *mem, unsigned lo
     }
 
     // but kallsyms_in_memory_markers shoud be start 0x00000000
-    addr--;
+#ifdef __LP64__
+    addr = (unsigned long *)((unsigned long)addr & ~7);
+#else
+    addr = (unsigned long *)((unsigned long)addr & ~3);
+#endif
 
     info->markers = addr;
-    DBGPRINT("[+]kallsyms_markers=%08x\n", (unsigned int)info->markers + (unsigned int)offset);
+    DBGPRINT("[+]kallsyms_markers=%08lx\n", (unsigned long)info->markers + offset);
 
     // end of kallsyms_in_memory_markers
     addr = &info->markers[((info->num_syms-1)>>8)+1];
@@ -412,7 +442,7 @@ get_kallsyms_in_memory_addresses(kallsyms *info, unsigned long *mem, unsigned lo
     }
 
     info->token_table = (uint8_t*)addr;
-    DBGPRINT("[+]kallsyms_token_table=%08x\n", (unsigned int)info->token_table + (unsigned int)offset);
+    DBGPRINT("[+]kallsyms_token_table=%08lx\n", (unsigned long)info->token_table + offset);
 
     // search end of kallsyms_in_memory_token_table
     i = 0;
@@ -433,7 +463,7 @@ get_kallsyms_in_memory_addresses(kallsyms *info, unsigned long *mem, unsigned lo
 
     // but kallsyms_in_memory_markers shoud be start 0x0000
     info->token_index = (uint16_t*)&info->token_table[i-2];
-    DBGPRINT("[+]kallsyms_token_index=%08x\n", (unsigned int)info->token_index + (unsigned int)offset);
+    DBGPRINT("[+]kallsyms_token_index=%08lx\n", (unsigned long)info->token_index + offset);
 
     return 1;
   }
@@ -444,9 +474,13 @@ kallsyms *
 kallsyms_in_memory_init(unsigned long *mem, size_t len)
 {
   kallsyms *info;
+#ifdef __LP64__
+  unsigned long mmap_offset = 0xffffffc000080000LL - (unsigned long)mem;
+#else
   unsigned long mmap_offset = 0xc0008000 - (unsigned long)mem;
+#endif
   DBGPRINT("[+]mmap\n");
-  DBGPRINT("  mem=%08x length=%08x offset=%08x\n", (unsigned int)mem, (unsigned int)len, (unsigned int)mmap_offset);
+  DBGPRINT("  mem=%08lx length=%08x offset=%08lx\n", (unsigned long)mem, (unsigned int)len, (unsigned long)mmap_offset);
 
   info = calloc(sizeof(*info), 1);
   if (info == NULL) {
@@ -494,7 +528,7 @@ kallsyms_in_memory_print_all_to_file(kallsyms *info, FILE *fp)
 
   for (i = 0, off = 0; i < info->num_syms; i++) {
     off = kallsyms_in_memory_expand_symbol(info, off, namebuf);
-    fprintf(fp, "%08x %s\n", (unsigned int)le32toh(info->addresses[i]), namebuf);
+    fprintf(fp, "%08lx %s\n", (unsigned long)letoh(info->addresses[i]), namebuf);
   }
   return;
 }
@@ -535,7 +569,11 @@ do_kallsyms_in_memory(void)
     return false;
   }
 
+#ifdef __LP64__
+  address = convert_to_kernel_mapped_address((void *)0xffffffc000080000LL);
+#else
   address = convert_to_kernel_mapped_address((void *)0xc0008000);
+#endif
   ret = get_kallsyms_in_memory(address, KERNEL_MEMORY_SIZE);
 
   unmap_kernel_memory();
