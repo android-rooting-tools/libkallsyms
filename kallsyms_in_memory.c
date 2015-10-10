@@ -382,7 +382,11 @@ get_kallsyms_in_memory_addresses(kallsyms *info, unsigned long *mem, unsigned lo
     }
 
     // adjust
+#ifdef __LP64__
+    addr = (unsigned long*)((((unsigned long)&info->names[off]-1)|0x7)+1);
+#else
     addr = (unsigned long*)((((unsigned long)&info->names[off]-1)|0x3)+1);
+#endif
     if (addr >= end) {
       return 0;
     }
@@ -418,11 +422,7 @@ get_kallsyms_in_memory_addresses(kallsyms *info, unsigned long *mem, unsigned lo
     }
 
     // but kallsyms_in_memory_markers shoud be start 0x00000000
-#ifdef __LP64__
-    addr = (unsigned long *)((unsigned long)addr & ~7);
-#else
-    addr = (unsigned long *)((unsigned long)addr & ~3);
-#endif
+    addr--;
 
     info->markers = addr;
     DBGPRINT("[+]kallsyms_markers=%08lx\n", (unsigned long)info->markers + offset);
