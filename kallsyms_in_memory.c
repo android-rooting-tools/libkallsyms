@@ -181,10 +181,16 @@ static const unsigned long const pattern_kallsyms_addresses_1[PATTERN_MAX] = {
 };
 
 static const unsigned long const pattern_kallsyms_addresses_2[PATTERN_MAX] = {
+#ifdef __LP64__
+  0xffffffc000081000, // T do_undefinstr
+  0xffffffc000081000, // T _stext
+  0xffffffc000081000, // T __exception_text_start
+#else
   0xc0008000, // __init_begin
   0xc0008000, // _sinittext
   0xc0008000, // stext
   0xc0008000, // _text
+#endif
   0
 };
 
